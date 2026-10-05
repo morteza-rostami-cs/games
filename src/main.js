@@ -43,6 +43,12 @@ class Screen {
       // get the index
       const keyIndex = this.keysDown.indexOf(event.key);
 
+      // just a check for index not found
+      if (keyIndex === -1) {
+        console.log("key not found");
+        return;
+      }
+
       // remove from down keys
       this.keysDown.splice(keyIndex, 1);
     });
@@ -104,7 +110,7 @@ document.addEventListener("DOMContentLoaded", main);
 // ====================
 // ====================
 
-class Square {
+class Player {
   constructor() {
     this.x = screen.canvas.width / 2;
     this.y = screen.canvas.height / 2;
@@ -114,8 +120,8 @@ class Square {
   }
 
   update() {
-    // square edges
-    // so: x,y is for top left of square
+    // player edges
+    // so: x,y is for top left of player
     this.leftEdge = this.x;
     this.rightEdge = this.x + this.width;
     this.topEdge = this.y;
@@ -166,23 +172,89 @@ class Square {
   }
 }
 
-let square;
+class Enemy {
+  constructor(w, h) {
+    this.x = 0;
+    this.y = 0;
+
+    this.vx = 100;
+    this.vy = 100;
+
+    this.w = w;
+    this.h = h;
+
+    // this.speed = 100;
+  }
+
+  // separate the idea of move and direction
+  move() {
+    this.x += this.vx * deltaTime;
+    this.y += this.vy * deltaTime;
+  }
+
+  update() {
+    // console.log(this.vx, this.vy);
+    if (this.y + this.h >= Screen.BOTTOM) {
+      this.vy *= -1;
+      this.y = Screen.BOTTOM - this.h;
+    }
+
+    if (this.y <= Screen.TOP) {
+      this.vy *= -1;
+      this.y = Screen.TOP;
+    }
+
+    // left
+    if (this.x <= Screen.LEFT) {
+      this.vx *= -1;
+      this.x = Screen.LEFT;
+    }
+
+    // console.log(this.x + this.w, Screen.)
+    if (this.x + this.w >= Screen.RIGHT) {
+      // console.log(this.vx);
+      this.vx *= -1;
+      this.x = Screen.RIGHT - this.w;
+    }
+  }
+
+  setPos(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  draw() {
+    screen.ctx.fillStyle = "yellow";
+    screen.ctx.fillRect(this.x, this.y, this.w, this.h);
+  }
+}
+
+let player;
+let enemy;
 
 function init() {
-  square = new Square();
+  player = new Player();
+  enemy = new Enemy(20, 20);
+  // center of screen
+  enemy.setPos(Screen.WIDTH / 2 - enemy.w, Screen.HEIGHT / 2 - enemy.h);
+  // enemy.init();
 }
 
 function update() {
   // x += 10 * deltaTime;
   // console.log(screen.keysDown);
 
-  square.update();
-  square.move();
+  // player.update();
+  // player.move();
+
+  enemy.move();
+  enemy.update();
 }
 
 function draw() {
   // clear the canvas in each frame
   screen.ctx.clearRect(0, 0, screen.canvas.width, screen.canvas.height);
 
-  square.draw();
+  // player.draw();
+  enemy.draw();
 }

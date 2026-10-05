@@ -44,6 +44,12 @@ class Screen {
       // get the index
       const keyIndex = this.keysDown.indexOf(event.key);
 
+      // just a check for index not found
+      if (keyIndex === -1) {
+        console.log("key not found");
+        return;
+      }
+
       // remove from down keys
       this.keysDown.splice(keyIndex, 1);
     });
