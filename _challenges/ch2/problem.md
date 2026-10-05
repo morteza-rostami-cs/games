@@ -1,43 +1,39 @@
-## Challenge 2 — The Moving Target
+## Challenge 2 — Grid Treasure Search
 
-We're going to increase the difficulty **one step**, not jump dramatically.
+Build a **10×10 grid** containing:
 
-Build a small Canvas program with:
+- 1 player
+- 1 hidden treasure
+- The player can move **one cell at a time** with the arrow keys.
+- The treasure is placed at a random cell.
+- The player does **not** know its location.
+- When the player reaches the treasure, display **“Found!”** and stop further movement.
 
-- A **player square** controlled by the arrow keys.
-- A **target square** somewhere on the canvas.
-- The target continuously moves around the canvas.
-- If the player touches the target, the target should **immediately move to a new position**.
-- Keep a score: **+1 every time the player catches the target**.
-- The target must never leave the canvas.
+### Your goal
 
-### The important part
+The important part is **not the Canvas**. The problem is to correctly represent and detect the relationship between the player's position and the hidden target.
 
-I'm deliberately **not** telling you how the target should move.
+### Prerequisites — learn these first
 
-You need to decide:
+You already proved the previous skills, so **do not study them again**.
 
-- What information the target needs to store.
-- How its movement works.
-- How you determine whether the two squares are touching.
-- How you choose a new valid position after a catch.
-- How you prevent the target from leaving the screen.
+New concepts you need:
 
-You are free to choose the movement behavior. It can be simple.
+1. **Random integers in a range**
+   - Generate a random row/column from `0` to `9`.
 
-### Constraints
+2. **Coordinate comparison**
+   - Determine whether two grid positions represent the same cell.
 
-Don't add unnecessary complexity:
+3. **Boolean expressions**
+   - Combining conditions with `&&` / `||`.
 
-- No physics.
-- No acceleration.
-- No enemies.
-- No menus.
-- No external libraries.
-- JavaScript + HTML Canvas only.
+4. **State flags**
+   - Represent something like `found = true/false`.
 
-And **don't look up a solution to this particular problem**. Looking up Canvas APIs is completely fine.
+5. **Basic event/state flow**
+   - Understand what should happen after the treasure is found.
 
-The interesting part for me is seeing **how you invent the solution yourself**.
+That's it. **No new data structures, algorithms, recursion, vectors, physics, or advanced math.**
 
-When you're done, send me the code again. I won't just judge whether it works — I'll look at **how you reasoned about the problem**, and that will determine Challenge 3.
+The challenge is intentionally small, but unlike Challenge 1, it requires you to decide **how to represent and detect the game condition yourself.**

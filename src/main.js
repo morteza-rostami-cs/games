@@ -12,7 +12,10 @@ class Screen {
     this.ctx;
 
     // pressed keys
-    this.keysDown = [];
+    // this.keysDown = [];
+    this.keysDown = new Set();
+    // pressed once per frame
+    this.keysPressed = new Set();
   }
 
   setup() {
@@ -32,25 +35,23 @@ class Screen {
       // prevent default browser
       event.preventDefault();
 
+      if (event.repeat) return; // prevent repeated events
+
       // push the current key down
       // if: it is not already in there
-      if (!this.keysDown.includes(event.key)) {
-        this.keysDown.push(event.key);
+      if (!this.keysDown.has(event.key)) {
+        this.keysDown.add(event.key);
+        this.keysPressed.add(event.key);
       }
     });
 
     this.canvas.addEventListener("keyup", (event) => {
       // get the index
-      const keyIndex = this.keysDown.indexOf(event.key);
-
-      // just a check for index not found
-      if (keyIndex === -1) {
-        console.log("key not found");
-        return;
-      }
+      // const keyIndex = this.keysDown.indexOf(event.key);
 
       // remove from down keys
-      this.keysDown.splice(keyIndex, 1);
+      // this.keysDown.splice(keyIndex, 1);
+      this.keysDown.delete(event.key);
     });
 
     const app = document.getElementById("app");
@@ -58,6 +59,19 @@ class Screen {
     if (!app) throw new Error("no app element");
 
     app.appendChild(this.canvas);
+  }
+
+  isKeyDow(key) {
+    return this.keysDown.has(key);
+  }
+
+  wasPressed(key) {
+    return this.keysPressed.has(key);
+  }
+
+  // remove all pressed keys at the end of each frame -- so in each frame we add once and remove it
+  endFrame() {
+    this.keysPressed.clear();
   }
 }
 
@@ -90,6 +104,8 @@ function loop(timestamp) {
 
   draw();
 
+  // clear screen state
+  screen.endFrame();
   requestAnimationFrame(loop);
 }
 
@@ -111,150 +127,260 @@ document.addEventListener("DOMContentLoaded", main);
 // ====================
 
 class Player {
-  constructor() {
-    this.x = screen.canvas.width / 2;
-    this.y = screen.canvas.height / 2;
-    this.width = 50;
-    this.height = 50;
-    this.speed = 150; // 20 px
+  // player lives on a grid -- so we keep row, col values -- instead of px values
+  constructor(row = 0, col = 1) {
+    this.row = row;
+    this.col = col;
   }
 
-  update() {
-    // player edges
-    // so: x,y is for top left of player
-    this.leftEdge = this.x;
-    this.rightEdge = this.x + this.width;
-    this.topEdge = this.y;
-    this.bottomEdge = this.y + this.height;
-  }
-
-  draw() {
+  draw(x, y) {
     screen.ctx.fillStyle = "red";
-    screen.ctx.fillRect(this.x, this.y, this.width, this.height);
+    screen.ctx.fillRect(x, y, 20, 20);
   }
 
-  move() {
-    // they can happen at the same time -- for diagonal move
-    if (screen.keysDown.includes("ArrowUp")) {
-      if (this.topEdge <= Screen.TOP) {
-        // clamp
-        this.y = Screen.TOP;
-      } else {
-        this.y = this.y - this.speed * deltaTime;
-      }
-    }
+  move(row, col) {
+    // check for out of bound
+    if (row < 0) return (this.row = 0);
 
-    if (screen.keysDown.includes("ArrowDown")) {
-      if (this.bottomEdge >= Screen.BOTTOM) {
-        // this.y is the top-left
-        this.y = Screen.BOTTOM - this.height;
-      } else {
-        this.y += this.speed * deltaTime;
-      }
-    }
+    if (row >= World.ROWS) return (this.row = World.ROWS - 1);
 
-    if (screen.keysDown.includes("ArrowLeft")) {
-      if (this.leftEdge <= Screen.LEFT) {
-        this.x = Screen.LEFT;
-      } else {
-        this.x -= this.speed * deltaTime;
-      }
-    }
+    if (col < 0) return (this.col = 0);
 
-    if (screen.keysDown.includes("ArrowRight")) {
-      if (this.rightEdge >= Screen.RIGHT) {
-        // pull it back
-        this.x = Screen.RIGHT - this.width;
-      } else {
-        this.x += this.speed * deltaTime;
-      }
-    }
-  }
-}
+    if (col >= World.COLS) return (this.col = World.COLS - 1);
 
-class Enemy {
-  constructor(w, h) {
-    this.x = 0;
-    this.y = 0;
-
-    this.vx = 100;
-    this.vy = 100;
-
-    this.w = w;
-    this.h = h;
-
-    // this.speed = 100;
-  }
-
-  // separate the idea of move and direction
-  move() {
-    this.x += this.vx * deltaTime;
-    this.y += this.vy * deltaTime;
+    // if not out of bound
+    this.row = row;
+    this.col = col;
   }
 
   update() {
-    // console.log(this.vx, this.vy);
-    if (this.y + this.h >= Screen.BOTTOM) {
-      this.vy *= -1;
-      this.y = Screen.BOTTOM - this.h;
+    // console.log("update player", keysDown);
+    if (screen.wasPressed("ArrowUp")) {
+      this.move(this.row - 1, this.col);
     }
 
-    if (this.y <= Screen.TOP) {
-      this.vy *= -1;
-      this.y = Screen.TOP;
+    if (screen.wasPressed("ArrowDown")) {
+      this.move(this.row + 1, this.col);
     }
 
-    // left
-    if (this.x <= Screen.LEFT) {
-      this.vx *= -1;
-      this.x = Screen.LEFT;
+    if (screen.wasPressed("ArrowLeft")) {
+      this.move(this.row, this.col - 1);
     }
 
-    // console.log(this.x + this.w, Screen.)
-    if (this.x + this.w >= Screen.RIGHT) {
-      // console.log(this.vx);
-      this.vx *= -1;
-      this.x = Screen.RIGHT - this.w;
+    if (screen.wasPressed("ArrowRight")) {
+      // row = y direction
+      this.move(this.row, this.col + 1);
     }
-  }
-
-  setPos(x, y) {
-    this.x = x;
-    this.y = y;
-  }
-
-  draw() {
-    screen.ctx.fillStyle = "yellow";
-    screen.ctx.fillRect(this.x, this.y, this.w, this.h);
   }
 }
 
+class Cell {
+  static ID = 0;
+  static SIZE = 58; // px
+
+  constructor(color = "lightgreen") {
+    this.id = Cell.ID;
+    this.color = color;
+    // width and height
+    this.size = Cell.SIZE;
+
+    // increment for each instance
+    Cell.ID++;
+  }
+}
+
+class World {
+  static X = 110;
+  static Y = 10;
+
+  static ROWS = 10;
+  static COLS = 10;
+
+  constructor() {
+    this.grid = [
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+      [
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+        new Cell(),
+      ],
+    ];
+  }
+
+  // get world px coordinate -- by row, col
+  static getCoordinate(row, col, obj_w = 10, obj_h = 10) {
+    // to center object -- add half of cell w/h and subtract object w/h
+    // row = y and col = x
+    const y = Cell.SIZE * row + World.Y + Cell.SIZE / 2 - obj_h;
+    const x = Cell.SIZE * col + World.X + Cell.SIZE / 2 - obj_w;
+
+    // console.log(Cell.SIZE);
+    return { x, y };
+  }
+
+  draw() {
+    for (let i = 0; i < this.grid.length; i++) {
+      for (let j = 0; j < this.grid[0].length; j++) {
+        const cell = this.grid[i][j];
+
+        screen.ctx.strokeStyle = "white";
+        screen.ctx.fillStyle = cell.color;
+
+        screen.ctx.lineWidth = 2;
+        // console.log(cell.size * j);
+
+        screen.ctx.fillRect(
+          cell.size * j + World.X, // move x
+          cell.size * i + World.Y, // move y
+          cell.size,
+          cell.size,
+        );
+        screen.ctx.strokeRect(
+          cell.size * j + World.X, // move x
+          cell.size * i + World.Y, // move y
+          cell.size,
+          cell.size,
+        );
+      }
+    }
+  }
+}
+
+let world;
 let player;
-let enemy;
 
 function init() {
+  world = new World();
   player = new Player();
-  enemy = new Enemy(20, 20);
-  // center of screen
-  enemy.setPos(Screen.WIDTH / 2 - enemy.w, Screen.HEIGHT / 2 - enemy.h);
-  // enemy.init();
 }
 
 function update() {
-  // x += 10 * deltaTime;
-  // console.log(screen.keysDown);
-
-  // player.update();
-  // player.move();
-
-  enemy.move();
-  enemy.update();
+  player.update();
 }
 
 function draw() {
   // clear the canvas in each frame
   screen.ctx.clearRect(0, 0, screen.canvas.width, screen.canvas.height);
 
-  // player.draw();
-  enemy.draw();
+  // screen.ctx.fillStyle = "red";
+  // screen.ctx.fillRect(10, 10, 10, 10);
+  world.draw();
+
+  const { x, y } = World.getCoordinate(player.row, player.col);
+  // console.log(x, y);
+  player.draw(x, y);
 }
